@@ -107,20 +107,33 @@ class Cell(nn.ModuleList):
         states = [s0, s1]
         offset = 0
         for i in range(self._steps):
-            s = sum(self._edges[offset + j](h, self.ops_alphas[offset + j],
-                    self.att_alphas[offset + j]) for j, h in enumerate(states))
+            s = sum(
+                self._edges[offset + j](
+                    h, 
+                    self.ops_alphas[offset + j],
+                    self.att_alphas[offset + j]
+                ) for j, h in enumerate(states)
+            )
             offset += len(states)
             states.append(s)
         return torch.cat(states[-self._multiplier:], dim=1)
 
-    def generate_rand_alphas(self):
+    def generate_rand_alphas(self, is_infer=False):
         k = sum(1 for i in range(self._steps) for n in range(2 + i))
         num_op = len(OPS_PRIMITIVES)
         num_att = len(ATT_PRIMITIVES)
         ops_alp = torch.zeros(k, num_op)
         att_alp = torch.zeros(k, num_att)
-        self.ops_alphas = binarize(ops_alp, 2)
-        self.att_alphas = binarize(att_alp, 1)
+        if is_infer:
+            ops_alp = torch.ones(k, num_op)
+            return ops_alp, att_alp
+        else:
+            ops_alphas = binarize(ops_alp, 2)
+            att_alphas = binarize(att_alp, 1)
+            return ops_alphas, att_alphas
+        # self.ops_alphas = torch.ones_like(self.ops_alphas)
+        # self.att_alphas = torch.zeros_like(self.ops_alphas)
+        # exit()
 
     def set_edge_fixed(self, ops_matrix, att_matrix):
         for idx, edg in enumerate(self._edges):

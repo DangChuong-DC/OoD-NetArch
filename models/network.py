@@ -47,7 +47,7 @@ class Network(nn.Module):
 
     def get_sub_net(self, ops_alphas, att_alphas):
         dim = len(ops_alphas.size())
-        assert dim == 2 or dim == 3, 'Does not support this case!!!'
+        assert dim in [2, 3], 'Does not support this case!!!'
         share = dim == 2
         subnet = copy.deepcopy(self)
         if share:
@@ -59,6 +59,10 @@ class Network(nn.Module):
                 c.set_edge_fixed(ops_alphas[i], att_alphas[i])
         return subnet
 
-    def generate_cell_alphas(self):
+    def generate_cell_alphas(self, is_infer=False):
+        ops_alphas, _ = self.cells[0].generate_rand_alphas(is_infer)
         for c in self.cells:
-            c.generate_rand_alphas()
+            c.ops_alphas = ops_alphas
+            c.att_alphas = torch.zeros(14, 3)
+        # for c in self.cells:
+        #     c.generate_rand_alphas()
