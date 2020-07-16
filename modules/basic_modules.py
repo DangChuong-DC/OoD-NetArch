@@ -21,24 +21,30 @@ class MixedEdge(nn.Module):
 
     def forward(self, x, ops_binaries, att_binaries):
         output = []
-        for idx, bin in enumerate(ops_binaries):
-            if bin == 1:
-                m_oi = self._opers[idx](x)
-                output.append(m_oi)
-            else:
-                m_oi = self._opers[idx](x)
-                output.append(m_oi.detach()*bin)
-        att_binaries *= ops_binaries[1]
-        att_out = []
-        for idx, bin in enumerate(att_binaries):
-            if bin == 1:
-                a_oi = self._attns[idx](output[1])
-                att_out.append(a_oi)
-            else:
-                a_oi = self._attns[idx](output[1])
-                att_out.append(a_oi.detach()*bin)
-        output[1] = sum(att_out)
-        output = sum(output)
+        for idx, bin_ in enumerate(ops_binaries):
+            m_oi = self._opers[idx](x)
+            if bin_:
+                output.append(m_oi * bin_)
+            # else:
+            #     output.append(m_oi.detach() * bin_)
+            # if bin == 1:
+            #     m_oi = self._opers[idx](x)
+            #     output.append(m_oi)
+            # else:
+            #     m_oi = self._opers[idx](x)
+            #     output.append(m_oi.detach()*bin)
+        # att_binaries *= ops_binaries[1]
+        # att_out = []
+        # for idx, bin in enumerate(att_binaries):
+        #     if bin == 1:
+        #         a_oi = self._attns[idx](output[1])
+        #         att_out.append(a_oi)
+        #     else:
+        #         a_oi = self._attns[idx](output[1])
+        #         att_out.append(a_oi.detach()*bin)
+        # output[1] = sum(att_out)
+        # output = sum(output)
+        output = torch.mean(torch.stack(output), dim=0)
         return output
 
     def set_edge_ops(self, ops_binaries, att_binaries):

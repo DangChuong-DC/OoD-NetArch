@@ -154,24 +154,25 @@ def infer(valid_queue, model, criterion):
     objs = utils.AverageMeter()
     top1 = utils.AverageMeter()
     model.eval()
-    model.generate_cell_alphas(is_infer=True)
+    for _ in range(5):
+        model.generate_cell_alphas(is_infer=False)
 
-    for step, (input, target) in enumerate(valid_queue):
-        input = input.cuda(non_blocking=True)
-        target = target.cuda(non_blocking=True)
+        for step, (input, target) in enumerate(valid_queue):
+            input = input.cuda(non_blocking=True)
+            target = target.cuda(non_blocking=True)
 
-        with torch.no_grad():
-            logits = model(input)
-            loss = criterion(logits, target)
+            with torch.no_grad():
+                logits = model(input)
+                loss = criterion(logits, target)
 
-        prec1, _ = utils.accuracy(logits, target, topk=(1, 5))
-        n = input.size(0)
-        objs.update(loss.clone().item(), n)
-        top1.update(prec1.clone().item(), n)
-        step += 1
+            prec1, _ = utils.accuracy(logits, target, topk=(1, 5))
+            n = input.size(0)
+            objs.update(loss.clone().item(), n)
+            top1.update(prec1.clone().item(), n)
+            step += 1
 
-        if step % args.report_freq == 0:
-            logging.info('Valid Step: %03d Objs: %e Acc: %f', step, objs.avg, top1.avg)
+            if step % args.report_freq == 0:
+                logging.info('Valid Step: %03d Objs: %e Acc: %f', step, objs.avg, top1.avg)
 
     return top1.avg, objs.avg
 
