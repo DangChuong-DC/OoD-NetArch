@@ -14,6 +14,7 @@ import torch.backends.cudnn as cudnn
 
 from utils import *
 from models.network import Network
+from tqdm import tqdm
 
 
 parser = argparse.ArgumentParser("cifar")
@@ -25,16 +26,25 @@ parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
 parser.add_argument('--weight_decay', type=float, default=5e-4, help='weight decay')
 parser.add_argument('--init_channels', type=int, default=36, help='num of init channels')
 parser.add_argument('--layers', type=int, default=8, help='total number of layers')
+<<<<<<< HEAD
 parser.add_argument('--eval_time', type=int, default=5, help='repetition of running evaluation')
 parser.add_argument('--report_freq', type=float, default=100, help='report frequency')
+=======
+parser.add_argument('--report_freq', type=float, default=50, help='report frequency')
+>>>>>>> origin/master
 parser.add_argument('--gpu', type=int, default=0, help='GPU device id')
 parser.add_argument('--epochs', type=int, default=200, help='num of training epochs')
 parser.add_argument('--cutout', action='store_true', default=False, help='use cutout')
 parser.add_argument('--cutout_length', type=int, default=16, help='cutout length')
 # parser.add_argument('--grad_clip', type=float, default=5, help='gradient clipping')
 parser.add_argument('--save', type=str, default='./CheckPoints/', help='experiment path')
+<<<<<<< HEAD
 parser.add_argument('--seed', type=int, default=12345, help='random seed')
 parser.add_argument('--tmp_data_dir', type=str, default='/home/anhcda/Storage/ANAS/data/', help='temp data dir')
+=======
+parser.add_argument('--seed', type=int, default=9, help='random seed')
+parser.add_argument('--tmp_data_dir', type=str, default='/home/engkarat/data/storage/', help='temp data dir')
+>>>>>>> origin/master
 parser.add_argument('--note', type=str, default='try', help='note for this run')
 parser.add_argument('--cifar100', action='store_true', default=False, help='search with cifar100 dataset')
 
@@ -65,7 +75,7 @@ def main():
     np.random.seed(args.seed)
     cudnn.benchmark = True
     torch.manual_seed(args.seed)
-    cudnn.enabled=True
+    cudnn.enabled = True
     torch.cuda.manual_seed(args.seed)
     logging.info("args = %s", args)
     logging.info("unparsed args = %s", unparsed)
@@ -76,11 +86,11 @@ def main():
     else:
         train_transform, valid_transform = utils._data_transforms_cifar10(args)
     if args.cifar100:
-        train_data = dset.CIFAR100(root=args.tmp_data_dir, train=True, download=False, transform=train_transform)
-        valid_data = dset.CIFAR100(root=args.tmp_data_dir, train=False, download=False, transform=valid_transform)
+        train_data = dset.CIFAR100(root=args.tmp_data_dir, train=True, download=True, transform=train_transform)
+        valid_data = dset.CIFAR100(root=args.tmp_data_dir, train=False, download=True, transform=valid_transform)
     else:
-        train_data = dset.CIFAR10(root=args.tmp_data_dir, train=True, download=False, transform=train_transform)
-        valid_data = dset.CIFAR10(root=args.tmp_data_dir, train=False, download=False, transform=valid_transform)
+        train_data = dset.CIFAR10(root=args.tmp_data_dir, train=True, download=True, transform=train_transform)
+        valid_data = dset.CIFAR10(root=args.tmp_data_dir, train=False, download=True, transform=valid_transform)
 
     train_queue = torch.utils.data.DataLoader(
         train_data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=args.workers
@@ -95,6 +105,10 @@ def main():
     criterion = criterion.cuda()
     supernet = Network(args.init_channels, CIFAR_CLASSES, args.layers)
     supernet.cuda()
+    print(len(supernet.cells))
+    # exit()
+    # ckpt = torch.load('./CheckPoints/eval-try-20200710-221619/weights.pt')
+    # supernet.load_state_dict(ckpt)
 
     optimizer = torch.optim.SGD(
         supernet.parameters(),
@@ -118,6 +132,7 @@ def main():
             valid_acc, valid_obj = infer(valid_queue, subnet, criterion)
             valid_top1.update(valid_acc)
         logging.info('Mean Valid Acc: %f', valid_top1.avg)
+
         scheduler.step()
 
         utils.save(supernet, os.path.join(args.save, 'supernet_weights.pt'))
@@ -133,7 +148,9 @@ def train(train_queue, model, criterion, optimizer):
         target = target.cuda(non_blocking=True)
 
         model.zero_grad()
+
         model.generate_share_alphas()   # change to `generate_free_alphas()` to let cell's architecture free
+
 
         logits = model(input)
         loss = criterion(logits, target)
@@ -145,6 +162,7 @@ def train(train_queue, model, criterion, optimizer):
         n = input.size(0)
         objs.update(loss.clone().item(), n)
         top1.update(prec1.clone().item(), n)
+        step += 1
 
         if step % args.report_freq == 0:
             logging.info('Train Step: %03d Objs: %e Acc: %f', step, objs.avg, top1.avg)
@@ -156,19 +174,23 @@ def infer(valid_queue, model, criterion):
     objs = utils.AverageMeter()
     top1 = utils.AverageMeter()
     model.eval()
+    for _ in range(5):
+        model.generate_cell_alphas(is_infer=False)
 
-    for step, (input, target) in enumerate(valid_queue):
-        input = input.cuda(non_blocking=True)
-        target = target.cuda(non_blocking=True)
+        for step, (input, target) in enumerate(valid_queue):
+            input = input.cuda(non_blocking=True)
+            target = target.cuda(non_blocking=True)
 
-        with torch.no_grad():
-            logits = model(input)
-            loss = criterion(logits, target)
+            with torch.no_grad():
+                logits = model(input)
+                loss = criterion(logits, target)
 
-        prec1, _ = utils.accuracy(logits, target, topk=(1, 5))
-        n = input.size(0)
-        objs.update(loss.clone().item(), n)
-        top1.update(prec1.clone().item(), n)
+            prec1, _ = utils.accuracy(logits, target, topk=(1, 5))
+            n = input.size(0)
+            objs.update(loss.clone().item(), n)
+            top1.update(prec1.clone().item(), n)
+            step += 1
+
 
     logging.info('Valid Stats --- Objs: %e Acc: %f', objs.avg, top1.avg)
 
