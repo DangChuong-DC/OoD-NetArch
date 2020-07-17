@@ -8,8 +8,8 @@ OPS_PRIMITIVES = [
 ]
 
 
-ATT_PRIMITIVES = [
-    'channel_attn',
-    'spatial_attn',
-    'identity',
-]
+# ATT_PRIMITIVES = [
+#     'channel_attn',
+#     'spatial_attn',
+#     'identity',
+# ]

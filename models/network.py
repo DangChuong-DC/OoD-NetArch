@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import copy
 
+# from utils import binarize
+from modules.genotypes import OPS_PRIMITIVES
 from modules.basic_modules import Cell
 
 
@@ -45,20 +47,25 @@ class Network(nn.Module):
         logits = self.classifier(out)
         return logits
 
-    def get_sub_net(self, ops_alphas, att_alphas):
+    def get_sub_net(self, ops_alphas):
         dim = len(ops_alphas.size())
-        assert dim == 2 or dim == 3, 'Does not support this case!!!'
+        assert dim in (2, 3), 'Does not support this case!!!'
         share = dim == 2
         subnet = copy.deepcopy(self)
         if share:
             for c in subnet.cells:
-                c.set_edge_fixed(ops_alphas, att_alphas)
+                c.set_edge_fixed(ops_alphas)
         else:
             assert ops_alphas.size(0) == self._layers, 'Not enough alphas for each cell'
             for i, c in enumerate(subnet.cells):
-                c.set_edge_fixed(ops_alphas[i], att_alphas[i])
+                c.set_edge_fixed(ops_alphas[i])
         return subnet
 
-    def generate_cell_alphas(self):
+    def generate_share_alphas(self):
+        ops_alp = self.cells[0].generate_rand_alphas()
+        for c in self.cells[1:]:
+            c.ops_alphas = ops_alp.clone()
+
+    def generate_free_alphas(self):
         for c in self.cells:
-            c.generate_rand_alphas()
+            _ = c.generate_rand_alphas()

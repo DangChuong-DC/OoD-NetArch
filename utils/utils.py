@@ -4,45 +4,31 @@ import shutil
 import numpy as np
 import torchvision.transforms as transforms
 
-from modules.genotypes import OPS_PRIMITIVES, ATT_PRIMITIVES
+from modules.genotypes import OPS_PRIMITIVES
 
 
-def binarize(matrix, max):
-    assert max <= 2, 'This function does not support `max` > 2'
-    def chosen_idx(n, max):
-        idx = np.random.choice([i for i in range(n)], max, replace=True)
-        if max > 1:
-            if idx[0] == idx[1]:
-                idx = idx[1:]
-        return idx
-    n_path, n_choice = matrix.size()
-    for i in range(n_path):
-        matrix[i][chosen_idx(n_choice, max)] = 1.0
-    return matrix
+# def binarize(matrix, max):
+#     assert max <= 2, 'This function does not support `max` > 2'
+#     def chosen_idx(n, max):
+#         idx = np.random.choice([i for i in range(n)], max, replace=True)
+#         idx = list(set(idx))
+#         return idx
+#     n_path, n_choice = matrix.size()
+#     for i in range(n_path):
+#         matrix[i][chosen_idx(n_choice, max)] = 1.0
+#     return matrix
 
 
-def get_child_alphas(layers, steps, free=False):
+def get_child_alphas(layers, steps, free=False, keep_prob=0.5):
     k = sum(1 for i in range(steps) for n in range(2 + i))
     n_ops = len(OPS_PRIMITIVES)
-    n_att = len(ATT_PRIMITIVES)
     if not free:
-        ops_mat = torch.zeros(k, n_ops)
-        ops_mat = binarize(ops_mat, 2)
+        ops_mat = torch.rand(k, n_ops).bernoulli_(keep_prob)
         ops_mat = ops_mat[:, :-1]
-        att_mat = torch.zeros(k, n_ops)
-        att_mat = binarize(att_mat, 1)
-        att_mat = att_mat[:, :-1]
-        att_mat *= ops_mat[:, 1:2]
     else:
-        ops_mat = torch.zeros(layers, k, n_ops)
-        att_mat = torch.zeros(layers, k, n_ops)
-        for i in range(layers):
-            ops_mat[i] = binarize(ops_mat[i], 2)
-            att_mat[i] = binarize(att_mat[i], 1)
+        ops_mat = torch.rand(layers, k, n_ops).bernoulli_(keep_prob)
         ops_mat = ops_mat[:, :, :-1]
-        att_mat = att_mat[:, :, :-1]
-        att_mat *= ops_mat[:, :, 1:2]
-    return ops_mat, att_mat
+    return ops_mat
 
 
 
