@@ -26,25 +26,18 @@ parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
 parser.add_argument('--weight_decay', type=float, default=5e-4, help='weight decay')
 parser.add_argument('--init_channels', type=int, default=36, help='num of init channels')
 parser.add_argument('--layers', type=int, default=8, help='total number of layers')
-<<<<<<< HEAD
 parser.add_argument('--eval_time', type=int, default=5, help='repetition of running evaluation')
 parser.add_argument('--report_freq', type=float, default=100, help='report frequency')
-=======
-parser.add_argument('--report_freq', type=float, default=50, help='report frequency')
->>>>>>> origin/master
 parser.add_argument('--gpu', type=int, default=0, help='GPU device id')
 parser.add_argument('--epochs', type=int, default=200, help='num of training epochs')
 parser.add_argument('--cutout', action='store_true', default=False, help='use cutout')
 parser.add_argument('--cutout_length', type=int, default=16, help='cutout length')
 # parser.add_argument('--grad_clip', type=float, default=5, help='gradient clipping')
 parser.add_argument('--save', type=str, default='./CheckPoints/', help='experiment path')
-<<<<<<< HEAD
+
 parser.add_argument('--seed', type=int, default=12345, help='random seed')
 parser.add_argument('--tmp_data_dir', type=str, default='/home/anhcda/Storage/ANAS/data/', help='temp data dir')
-=======
-parser.add_argument('--seed', type=int, default=9, help='random seed')
-parser.add_argument('--tmp_data_dir', type=str, default='/home/engkarat/data/storage/', help='temp data dir')
->>>>>>> origin/master
+
 parser.add_argument('--note', type=str, default='try', help='note for this run')
 parser.add_argument('--cifar100', action='store_true', default=False, help='search with cifar100 dataset')
 
