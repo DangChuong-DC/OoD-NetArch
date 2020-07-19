@@ -32,7 +32,7 @@ parser.add_argument('--gpu', type=int, default=0, help='GPU device id')
 parser.add_argument('--epochs', type=int, default=200, help='num of training epochs')
 parser.add_argument('--cutout', action='store_true', default=False, help='use cutout')
 parser.add_argument('--cutout_length', type=int, default=16, help='cutout length')
-# parser.add_argument('--grad_clip', type=float, default=5, help='gradient clipping')
+parser.add_argument('--grad_clip', type=float, default=5, help='gradient clipping')
 parser.add_argument('--save', type=str, default='./CheckPoints/', help='experiment path')
 
 parser.add_argument('--seed', type=int, default=12345, help='random seed')
@@ -148,7 +148,8 @@ def train(train_queue, model, criterion, optimizer):
         logits = model(input)
         loss = criterion(logits, target)
         loss.backward()
-        # nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+        if args.grad_clip > 0:
+            nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
         optimizer.step()
 
         prec1, _ = utils.accuracy(logits, target, topk=(1, 5))
