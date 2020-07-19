@@ -50,7 +50,6 @@ class Network(nn.Module):
     def get_sub_net(self, ops_alphas):
         dim = len(ops_alphas.size())
         assert dim in (2, 3), 'Does not support this case!!!'
-
         share = dim == 2
         subnet = copy.deepcopy(self)
         if share:
