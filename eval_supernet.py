@@ -25,7 +25,6 @@ parser.add_argument('--workers', type=int, default=2, help='number of workers to
 parser.add_argument('--batch_size', type=int, default=128, help='batch size')
 parser.add_argument('--learning_rate', type=float, default=0.001, help='init learning rate')
 parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
-parser.add_argument('--weight_decay', type=float, default=5e-4, help='weight decay')
 parser.add_argument('--init_channels', type=int, default=36, help='num of init channels')
 parser.add_argument('--layers', type=int, default=8, help='total number of layers')
 parser.add_argument('--report_freq', type=float, default=100, help='report frequency')
@@ -112,11 +111,15 @@ def main():
                 f.write('{:d}'.format(int(j)))
             f.write('\n')
 
+    if args.cifar100:
+        weight_decay = 5e-4
+    else:
+        weight_decay = 3e-4
     optimizer = torch.optim.SGD(
         supernet.parameters(),
         args.learning_rate,
         momentum=args.momentum,
-        weight_decay=args.weight_decay,
+        weight_decay=weight_decay,
     )
     # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epochs), eta_min=0)
 
