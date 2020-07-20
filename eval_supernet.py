@@ -16,7 +16,6 @@ import warnings
 
 from utils import *
 from models.network import Network
-from tqdm import tqdm
 
 
 warnings.filterwarnings('ignore')
@@ -33,7 +32,7 @@ parser.add_argument('--epochs', type=int, default=3, help='num of training epoch
 parser.add_argument('--cutout', action='store_true', default=False, help='use cutout')
 parser.add_argument('--cutout_length', type=int, default=16, help='cutout length')
 parser.add_argument('--save', type=str, default='./CheckPoints/', help='experiment path')
-parser.add_argument('--load_at', type=str, default='./CheckPoints/supernet-cf100_8l_0025lr_200e-20200717-203506/supernet_weights.pt', help='Checkpoint path.')
+parser.add_argument('--load_at', type=str, default='./CheckPoints/supernet-try-20200719-183431/supernet_weights.pt', help='Checkpoint path.')
 parser.add_argument('--seed', type=int, default=9, help='random seed')
 parser.add_argument('--tmp_data_dir', type=str, default='/home/engkarat/data/storage/', help='temp data dir')
 parser.add_argument('--note', type=str, default='try', help='note for this run')
@@ -98,8 +97,27 @@ def main():
     supernet.cuda()
     # print(len(supernet.cells))
     ckpt = torch.load(args.load_at)
+    print(args.load_at)
     supernet.load_state_dict(ckpt)
     supernet.generate_share_alphas()
+    # alphas = torch.Tensor([
+    #     [0., 1., 1.],
+    #     [0., 1., 0.],
+    #     [0., 1., 0.],
+    #     [0., 1., 1.],
+    #     [0., 1., 1.],
+    #     [0., 1., 1.],
+    #     [0., 1., 0.],
+    #     [0., 1., 0.],
+    #     [0., 1., 1.],
+    #     [0., 1., 0.],
+    #     [0., 1., 0.],
+    #     [0., 1., 1.],
+    #     [0., 1., 0.],
+    #     [0., 1., 1.]
+    # ]).cuda()
+    # for i in range(8):
+    #     supernet.cells[i].ops_alphas = alphas
     alphas = supernet.cells[0].ops_alphas
     print(alphas)
     out_dir = './eval_out/{}'.format(args.seed)
