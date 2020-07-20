@@ -27,6 +27,7 @@ parser.add_argument('--learning_rate', type=float, default=0.001, help='init lea
 parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
 parser.add_argument('--init_channels', type=int, default=36, help='num of init channels')
 parser.add_argument('--layers', type=int, default=8, help='total number of layers')
+parser.add_argument('--feat_comb', type=str, default='sum', help='type of feature combine method within cell')
 parser.add_argument('--report_freq', type=float, default=100, help='report frequency')
 parser.add_argument('--epochs', type=int, default=3, help='num of training epochs')
 parser.add_argument('--cutout', action='store_true', default=False, help='use cutout')
@@ -93,7 +94,7 @@ def main():
     # build Network
     criterion = nn.CrossEntropyLoss()
     criterion = criterion.cuda()
-    supernet = Network(args.init_channels, CIFAR_CLASSES, args.layers)
+    supernet = Network(args.init_channels, CIFAR_CLASSES, args.layers, combine_method=args.feat_comb)
     supernet.cuda()
     # print(len(supernet.cells))
     ckpt = torch.load(args.load_at)
