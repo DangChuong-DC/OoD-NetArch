@@ -4,17 +4,17 @@ import copy
 
 from modules.basic_operations import *
 from modules.genotypes import OPS_PRIMITIVES
-# from utils import binarize
 
 
 class MixedEdge(nn.Module):
 
-    def __init__(self, C, stride):
+    def __init__(self, C, stride, comb_med):
         super(MixedEdge, self).__init__()
         self._opers = nn.ModuleList()
         for name in OPS_PRIMITIVES:
             op = CANDIDATES[name](C, stride, True)
             self._opers.append(op)
+        self._comb_med = comb_med
 
     def forward(self, x, ops_binaries):
         output = []
@@ -25,10 +25,11 @@ class MixedEdge(nn.Module):
             else:
                 m_oi = self._opers[idx](x)
                 output.append(m_oi.detach()*bin)
-        output = sum(output)
+        output = torch.stack(output, dim=0)
+        output = COMBINE_MED[self._comb_med](output)
         return output
 
-    def set_edge_ops(self, ops_binaries):
+    def set_edge_ops(self, ops_binaries, comb_med):
         assert ops_binaries.size(-1) == 2, 'Wrong input for alphas'
         opers = []
         for idx, bin in enumerate(ops_binaries):
@@ -36,30 +37,33 @@ class MixedEdge(nn.Module):
                 opers.append(self._opers[idx])
         if len(opers) == 0:
             opers.append(self._opers[-1])
-        return Edge(opers)
+        return Edge(opers, comb_med)
 
 
 class Edge(nn.Module):
 
-    def __init__(self, opers):
+    def __init__(self, opers, comb_med):
         super(Edge, self).__init__()
         self._opers = nn.ModuleList(opers)
+        self._comb_med = comb_med
 
     def forward(self, x, *arg):
         output = []
         for op in self._opers:
             output.append(op(x))
-        output = sum(output)
+        output = torch.stack(output, dim=0)
+        output = COMBINE_MED[self._comb_med](output)
         return output
 
 
 class Cell(nn.ModuleList):
 
-    def __init__(self, steps, multiplier, C_prev_prev, C_prev, C, reduction, reduction_prev):
+    def __init__(self, steps, multiplier, C_prev_prev, C_prev, C, reduction, reduction_prev, combine_method):
         super(Cell, self).__init__()
         self.reduction = reduction
         self._steps = steps
         self._multiplier = multiplier
+        self._combine_method = combine_method
 
         if reduction_prev:
             self.preprocess0 = FactorizedReduce(C_prev_prev, C)
@@ -69,13 +73,13 @@ class Cell(nn.ModuleList):
         self.preprocess1 = ReLUConvBN(C_prev, C, 1, 1, 0)
 
         self._edges = nn.ModuleList()
-        self._compile(C, reduction)
+        self._compile(C, reduction, combine_method)
 
-    def _compile(self, C, reduction):
+    def _compile(self, C, reduction, combine_method):
         for i in range(self._steps):
             for j in range(2 + i):
                 stride = 2 if reduction and j < 2 else 1
-                op = MixedEdge(C, stride)
+                op = MixedEdge(C, stride, combine_method)
                 self._edges.append(op)
         self.ops_alphas = None
 
@@ -100,4 +104,4 @@ class Cell(nn.ModuleList):
 
     def set_edge_fixed(self, ops_matrix):
         for idx, edg in enumerate(self._edges):
-            self._edges[idx] = edg.set_edge_ops(ops_matrix[idx])
+            self._edges[idx] = edg.set_edge_ops(ops_matrix[idx], self._combine_method)

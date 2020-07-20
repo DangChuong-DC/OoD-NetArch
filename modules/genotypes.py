@@ -13,3 +13,9 @@ OPS_PRIMITIVES = [
 #     'spatial_attn',
 #     'identity',
 # ]
+
+
+COMBINE_MED = {
+    'mean': lambda x, dim=0: torch.mean(x, dim=dim),
+    'sum': lambda x, dim=0: torch.sum(x, dim=dim),
+}

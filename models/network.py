@@ -2,14 +2,13 @@ import torch
 import torch.nn as nn
 import copy
 
-# from utils import binarize
 from modules.genotypes import OPS_PRIMITIVES
 from modules.basic_modules import Cell
 
 
 class Network(nn.Module):
 
-    def __init__(self, C, num_classes, layers, steps=4, multiplier=4, stem_multiplier=3):
+    def __init__(self, C, num_classes, layers, steps=4, multiplier=4, stem_multiplier=3, combine_method='sum'):
         super(Network, self).__init__()
         self._C = C
         self._num_classes = num_classes
@@ -32,7 +31,7 @@ class Network(nn.Module):
                 reduction = True
             else:
                 reduction = False
-            cell = Cell(steps, multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev)
+            cell = Cell(steps, multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev, combine_method)
             reduction_prev = reduction
             self.cells.append(cell)
             C_prev_prev, C_prev = C_prev, multiplier*C_curr
