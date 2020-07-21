@@ -140,13 +140,12 @@ class LinearCosine(torch.nn.Module):
     def forward(self, x):
         x_normalized = F.normalize(x, dim=-1)
         w_normalized = F.normalize(self.weight)
-        self.out = F.linear(x_normalized, w_normalized)
-        out = self.out
+        out = F.linear(x_normalized, w_normalized)
         if self.use_scale:
             tmp = self.fc_scale(x)
             sh = tmp.size()
-            self.scale = torch.exp(self.bn_scale(tmp.view([-1, 1])))
-            out = self.out * self.scale.view(sh)
+            scale = torch.exp(self.bn_scale(tmp.view([-1, 1])))
+            out = out * scale.view(sh)
         return out
 
 
