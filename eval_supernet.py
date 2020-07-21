@@ -39,6 +39,7 @@ parser.add_argument('--note', type=str, default='try', help='note for this run')
 parser.add_argument('--cifar100', action='store_true', default=False, help='search with cifar100 dataset')
 parser.add_argument('--fine_tune', action='store_true', default=False, help='Specify if fine-tuning is done.')
 parser.add_argument('--ood_dir', type=str, default='/home/engkarat/data/storage/ood_datasets_for_cifar/', help='Path of ood folder.')
+parser.add_argument('--is_cosine', action='store_true', default=False, help='Specify if the cosine FC is used.')
 
 args, unparsed = parser.parse_known_args()
 
@@ -93,7 +94,10 @@ def main():
     # build Network
     criterion = nn.CrossEntropyLoss()
     criterion = criterion.cuda()
-    supernet = Network(args.init_channels, CIFAR_CLASSES, args.layers, combine_method=args.feat_comb)
+    supernet = Network(
+        args.init_channels, CIFAR_CLASSES, args.layers,
+        combine_method=args.feat_comb, is_cosine=args.is_cosine,
+    )
     supernet.cuda()
     # print(len(supernet.cells))
     ckpt = torch.load(args.load_at)

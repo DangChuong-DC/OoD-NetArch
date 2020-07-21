@@ -123,3 +123,83 @@ class SpatialAttention(nn.Module):
         feat = torch.cat((mean, max), dim=1)
         mask = torch.sigmoid(self.fc(feat))
         return x*mask.expand_as(x)
+
+
+class LinearCosine(torch.nn.Module):
+
+    def __init__(self, in_features, out_features, w_init_fn=nn.init.kaiming_normal_, use_scale=True):
+        super(LinearCosine, self).__init__()
+        self.weight = nn.Parameter(torch.ones(out_features, in_features))
+        w_init_fn(self.weight)
+        self.use_scale = use_scale
+        self.out_features = out_features
+        if self.use_scale:
+            self.fc_scale = nn.Linear(in_features, 1, bias=False)
+            self.bn_scale = nn.BatchNorm1d(1)
+
+    def forward(self, x):
+        x_normalized = F.normalize(x, dim=-1)
+        w_normalized = F.normalize(self.weight)
+        self.out = x_normalized.matmul(w_normalized.transpose(0, 1))
+        out = self.out
+        if self.use_scale:
+            tmp = self.fc_scale(x)
+            sh = tmp.size()
+            self.scale = torch.exp(self.bn_scale(tmp.view([-1, 1])))
+            out = self.out * self.scale.view(sh)
+        return out
+
+
+class Conv1x1Cosine(torch.nn.Module):
+    def __init__(self, in_features, out_features, w_init_fn=nn.init.kaiming_normal_, use_scale=True):
+        super(Conv1x1Cosine, self).__init__()
+        self.weight = nn.Parameter(torch.ones(out_features, in_features))
+        w_init_fn(self.weight)
+        self.use_scale = use_scale
+        self.out_features = out_features
+        if self.use_scale:
+            self.fc = nn.Conv2d(in_features, 1, 1, bias=False)
+            self.bn = nn.BatchNorm2d(1)
+
+    def forward(self, x):
+        x_tmp = x.transpose(1, 3)
+        x_shape = x_tmp.shape
+        x_tmp = x_tmp.reshape([-1, x_shape[3]])
+        x_normalized = F.normalize(x_tmp, dim=-1)
+        w_normalized = F.normalize(self.weight)
+        out = x_normalized.matmul(w_normalized.transpose(0, 1))
+        self.out = out.reshape([x_shape[0], x_shape[1], x_shape[2], self.out_features]).transpose(1, 3)
+        if self.use_scale:
+            self.scale = torch.exp(self.bn(self.fc(x)))
+            out = self.out * self.scale
+        return out
+
+class Conv2dCosine(torch.nn.Module):
+    def __init__(
+        self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1,
+    ):
+        super(Conv2dCosine, self).__init__()
+        self.linear = LinearCosine(in_channels*kernel_size**2, out_channels)
+        self.in_channels = in_channels
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.dilation = dilation
+
+    def compute_shape(self, x):
+        h = (x.shape[2] + 2 * self.padding - 1 * (self.kernel_size - 1) - 1) // self.stride + 1
+        w = (x.shape[3] + 2 * self.padding - 1 * (self.kernel_size - 1) - 1) // self.stride + 1
+        return h, w
+
+    def operate(self, x_unf):
+        feat = x_unf.transpose(1, 2)
+        res = self.linear(feat)
+        return res.transpose(1, 2)
+
+    def forward(self, x):
+        x_unf = torch.nn.functional.unfold(
+            x, self.kernel_size, self.dilation, self.padding, self.stride
+        )
+        h, w = self.compute_shape(x)
+        result = self.operate(x_unf).view(x.shape[0], -1, h, w)
+        return result

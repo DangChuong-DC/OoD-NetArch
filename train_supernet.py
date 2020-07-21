@@ -37,6 +37,7 @@ parser.add_argument('--seed', type=int, default=12345, help='random seed')
 parser.add_argument('--tmp_data_dir', type=str, default='/home/engkarat/data/storage/', help='temp data dir')
 parser.add_argument('--note', type=str, default='try', help='note for this run')
 parser.add_argument('--cifar100', action='store_true', default=False, help='search with cifar100 dataset')
+parser.add_argument('--is_cosine', action='store_true', default=False, help='Specify if the cosine FC is used.')
 
 args, unparsed = parser.parse_known_args()
 
@@ -93,7 +94,10 @@ def main():
     # build Network
     criterion = nn.CrossEntropyLoss()
     criterion = criterion.cuda()
-    supernet = Network(args.init_channels, CIFAR_CLASSES, args.layers, combine_method=args.feat_comb)
+    supernet = Network(
+        args.init_channels, CIFAR_CLASSES, args.layers,
+        combine_method=args.feat_comb, is_cosine=args.is_cosine
+    )
     supernet.cuda()
 
     if args.cifar100:
