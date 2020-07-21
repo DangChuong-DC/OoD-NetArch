@@ -129,7 +129,7 @@ class LinearCosine(torch.nn.Module):
 
     def __init__(self, in_features, out_features, w_init_fn=nn.init.kaiming_normal_, use_scale=True):
         super(LinearCosine, self).__init__()
-        self.weight = nn.Parameter(torch.ones(out_features, in_features))
+        self.weight = nn.Parameter(torch.Tensor(out_features, in_features))
         w_init_fn(self.weight)
         self.use_scale = use_scale
         self.out_features = out_features
@@ -140,7 +140,7 @@ class LinearCosine(torch.nn.Module):
     def forward(self, x):
         x_normalized = F.normalize(x, dim=-1)
         w_normalized = F.normalize(self.weight)
-        self.out = x_normalized.matmul(w_normalized.transpose(0, 1))
+        self.out = F.linear(x_normalized, w_normalized)
         out = self.out
         if self.use_scale:
             tmp = self.fc_scale(x)
@@ -153,7 +153,7 @@ class LinearCosine(torch.nn.Module):
 class Conv1x1Cosine(torch.nn.Module):
     def __init__(self, in_features, out_features, w_init_fn=nn.init.kaiming_normal_, use_scale=True):
         super(Conv1x1Cosine, self).__init__()
-        self.weight = nn.Parameter(torch.ones(out_features, in_features))
+        self.weight = nn.Parameter(torch.Tensor(out_features, in_features))
         w_init_fn(self.weight)
         self.use_scale = use_scale
         self.out_features = out_features
@@ -175,9 +175,7 @@ class Conv1x1Cosine(torch.nn.Module):
         return out
 
 class Conv2dCosine(torch.nn.Module):
-    def __init__(
-        self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1,
-    ):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1):
         super(Conv2dCosine, self).__init__()
         self.linear = LinearCosine(in_channels*kernel_size**2, out_channels)
         self.in_channels = in_channels
