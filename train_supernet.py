@@ -155,7 +155,7 @@ def train(train_queue, model, criterion, optimizer):
         objs.update(loss.clone().item(), n)
         top1.update(prec1.clone().item(), n)
 
-        if step + 1 % args.report_freq == 0:
+        if (step + 1) % args.report_freq == 0:
             logging.info('Train Step: %03d Objs: %e Acc: %f', step + 1, objs.avg, top1.avg)
 
     return top1.avg, objs.avg
