@@ -3,7 +3,7 @@ import torch.nn as nn
 import copy
 
 from modules.basic_operations import *
-from modules.genotypes import OPS_PRIMITIVES
+from modules.genotypes import OPS_PRIMITIVES, COMBINE_MED
 
 
 class MixedEdge(nn.Module):

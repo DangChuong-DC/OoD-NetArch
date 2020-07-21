@@ -1,3 +1,4 @@
+import torch
 from collections import namedtuple
 
 
