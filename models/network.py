@@ -36,17 +36,21 @@ class Network(nn.Module):
             self.cells.append(cell)
             C_prev_prev, C_prev = C_prev, multiplier*C_curr
 
+        self.is_cosine = is_cosine
         if is_cosine:
             self.classifier = LinearCosine(C_prev, num_classes)
         else:
             self.classifier = nn.Linear(C_prev, num_classes)
 
-    def forward(self, input):
+    def forward(self, input, get_cosine=False):
         s0 = s1 = self.stem(input)
         for i, cell in enumerate(self.cells):
             s0, s1 = s1, cell(s0, s1)
         out = s1.mean(3, keepdim=False).mean(2, keepdim=False) # GAP
-        logits = self.classifier(out)
+        if self.is_cosine:
+            logits = self.classifier(out, get_cosine)
+        else:
+            logits = self.classifier(out)
         return logits
 
     def get_sub_net(self, ops_alphas):

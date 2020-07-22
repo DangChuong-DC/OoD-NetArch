@@ -137,16 +137,20 @@ class LinearCosine(torch.nn.Module):
             self.fc_scale = nn.Linear(in_features, 1, bias=False)
             self.bn_scale = nn.BatchNorm1d(1)
 
-    def forward(self, x):
+    def forward(self, x, get_cosine=False):
         x_normalized = F.normalize(x, dim=-1)
         w_normalized = F.normalize(self.weight)
         out = F.linear(x_normalized, w_normalized)
+        cosine = out[:]
         if self.use_scale:
             tmp = self.fc_scale(x)
             sh = tmp.size()
             scale = torch.exp(self.bn_scale(tmp.view([-1, 1])))
             out = out * scale.view(sh)
-        return out
+        if get_cosine:
+            return out, cosine
+        else:
+            return out
 
 
 class Conv1x1Cosine(torch.nn.Module):
