@@ -141,7 +141,7 @@ class LinearCosine(torch.nn.Module):
         x_normalized = F.normalize(x, dim=-1)
         w_normalized = F.normalize(self.weight)
         out = F.linear(x_normalized, w_normalized)
-        cosine = out[:]
+        cosine = out
         if self.use_scale:
             tmp = self.fc_scale(x)
             sh = tmp.size()
