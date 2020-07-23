@@ -32,7 +32,7 @@ parser.add_argument('--epochs', type=int, default=3, help='num of training epoch
 parser.add_argument('--cutout', action='store_true', default=False, help='use cutout')
 parser.add_argument('--cutout_length', type=int, default=16, help='cutout length')
 parser.add_argument('--save', type=str, default='./CheckPoints/', help='experiment path')
-parser.add_argument('--load_at', type=str, default='./CheckPoints/supernet-8l_COSINE_mean_600e-20200721-203514/supernet_weights.pt', help='Checkpoint path.')
+parser.add_argument('--load_at', type=str, default='./CheckPoints/supernet-cf100_8l_01lr_600e-20200720-135639/supernet_weights.pt', help='Checkpoint path.')
 parser.add_argument('--seed', type=int, default=9, help='random seed')
 parser.add_argument('--tmp_data_dir', type=str, default='/home/engkarat/data/storage/', help='temp data dir')
 parser.add_argument('--note', type=str, default='try', help='note for this run')
@@ -174,11 +174,12 @@ def get_mea(queue, net):
     with torch.no_grad():
         for x, y in queue:
             if args.is_cosine:
-                _, lg = net(x.cuda(), get_cosine=True)
+                lg, cos = net(x.cuda(), get_cosine=True)
+                lgs.append(cos.cpu().detach().numpy())
             else:
                 lg = net(x.cuda())
+                lgs.append(lg.cpu().detach().numpy())
             sm = torch.softmax(lg, 1)
-            lgs.append(lg.cpu().detach().numpy())
             sms.append(sm.cpu().detach().numpy())
     lgs = np.concatenate(lgs, 0)
     sms = np.concatenate(sms, 0)
