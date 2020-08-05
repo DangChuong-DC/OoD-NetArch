@@ -16,6 +16,7 @@ import warnings
 
 from utils import *
 from models.network import Network
+from torch.utils.tensorboard import SummaryWriter
 
 
 warnings.filterwarnings('ignore')
@@ -52,6 +53,12 @@ fh = logging.FileHandler(os.path.join(args.save, '{}/eval_out/{}/subnet_log.txt'
 fh.setFormatter(logging.Formatter(log_format))
 logging.getLogger().addHandler(fh)
 
+plot_pth = './results/{}/eval_out/{}/plot/tr/'.format(args.load_at.split('/')[2], args.folder)
+writer_tr = SummaryWriter(plot_pth, flush_secs=30)
+plot_pth = './results/{}/eval_out/{}/plot/va/'.format(args.load_at.split('/')[2], args.folder)
+writer_va = SummaryWriter(plot_pth, flush_secs=30)
+global_step = 0
+
 if args.cifar100:
     CIFAR_CLASSES = 100
 else:
@@ -83,10 +90,10 @@ def main():
         valid_data = dset.CIFAR10(root=args.tmp_data_dir, train=False, download=True, transform=valid_transform)
 
     train_queue = torch.utils.data.DataLoader(
-        train_data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=args.workers)
+        train_data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=args.workers, drop_last=True)
 
     valid_queue = torch.utils.data.DataLoader(
-        valid_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=args.workers)
+        valid_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=args.workers, drop_last=True)
 
     ood_queues = {}
     for k in ['svhn', 'lsun_resized', 'imnet_resized']:
@@ -133,7 +140,9 @@ def main():
         train_acc, _ = train(train_queue, subnet, criterion, optimizer)
         logging.info('train_acc {:.2f}'.format(train_acc))
 
-        valid_acc, _ = infer(valid_queue, subnet, criterion)
+        valid_acc, valid_loss = infer(valid_queue, subnet, criterion)
+        writer_va.add_scalar('loss', valid_loss, global_step)
+        writer_va.add_scalar('acc', valid_acc, global_step)
         logging.info('valid_acc {:.2f}'.format(valid_acc))
         scheduler.step()
 
@@ -203,6 +212,7 @@ def train(train_queue, model, criterion, optimizer):
     model.train()
 
     for step, (inp, target) in enumerate(train_queue):
+        global_step += 1
         inp = inp.cuda(non_blocking=True)
         target = target.cuda(non_blocking=True)
 
@@ -219,6 +229,12 @@ def train(train_queue, model, criterion, optimizer):
         n = inp.size(0)
         objs.update(loss.clone().item(), n)
         top1.update(prec1.clone().item(), n)
+        writer_tr.add_scalar('loss', loss.item(), global_step)
+        writer_tr.add_scalar('acc', prec1.item(), global_step)
+        decomp_loss_1 = torch.mean(torch.log(torch.sum(torch.exp(logits - torch.max(logits, 1)[0].view(-1, 1)), 1))).item()
+        writer_tr.add_scalar('decomp_loss_1', decomp_loss_1, global_step)
+        decomp_loss_2 = torch.mean(torch.max(logits, 1)[0] - logits[range(len(inp)), target.cpu().numpy()]).item()
+        writer_tr.add_scalar('decomp_loss_2', decomp_loss_2, global_step)
 
         if (step + 1) % args.report_freq == 0:
             logging.info('Train Step: %03d Objs: %e Acc: %.2f', step + 1, objs.avg, top1.avg)
