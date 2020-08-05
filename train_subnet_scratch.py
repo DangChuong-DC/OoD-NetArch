@@ -38,9 +38,9 @@ parser.add_argument('--save', type=str, default='./results/', help='experiment p
 parser.add_argument('--load_at', type=str, default='./CheckPoints/supernet-cf100_8l_01lr_600e-20200720-135639/supernet_weights.pt', help='Checkpoint path.')
 parser.add_argument('--super_seed', type=int, default=12345, help='random seed for supernet')
 parser.add_argument('--folder', type=int, default=0, help='folder for saving')
-parser.add_argument('--ckpt_path', type=str, default='/beegfs/anhcda/OoD_NAS/subnet_exp2/', help='path to save subnet weights')
-parser.add_argument('--tmp_data_dir', type=str, default='/home/engkarat/data/storage/', help='temp data dir')
-parser.add_argument('--ood_dir', type=str, default='/home/engkarat/data/storage/ood_datasets_for_cifar/', help='Path of ood folder.')
+parser.add_argument('--ckpt_path', type=str, default='/beegfs/anhcda/OoD_NAS/subnet_exp1/', help='path to save subnet weights')
+parser.add_argument('--tmp_data_dir', type=str, default='/home/anhcda/Storage/OoD_NAS/data/', help='temp data dir')
+parser.add_argument('--ood_dir', type=str, default='/home/anhcda/Storage/OoD_NAS/data/', help='Path of ood folder.')
 parser.add_argument('--cifar100', action='store_true', default=False, help='search with cifar100 dataset')
 parser.add_argument('--is_cosine', action='store_true', default=False, help='Specify if the cosine FC is used.')
 
@@ -212,6 +212,7 @@ def train(train_queue, model, criterion, optimizer):
     model.train()
 
     for step, (inp, target) in enumerate(train_queue):
+        global global_step
         global_step += 1
         inp = inp.cuda(non_blocking=True)
         target = target.cuda(non_blocking=True)
@@ -232,9 +233,9 @@ def train(train_queue, model, criterion, optimizer):
         writer_tr.add_scalar('loss', loss.item(), global_step)
         writer_tr.add_scalar('acc', prec1.item(), global_step)
         decomp_loss_1 = torch.mean(torch.log(torch.sum(torch.exp(logits - torch.max(logits, 1)[0].view(-1, 1)), 1))).item()
-        writer_tr.add_scalar('decomp_loss_1', decomp_loss_1, global_step)
+        writer_tr.add_scalar('decomp_loss_lgsmex', decomp_loss_1, global_step)
         decomp_loss_2 = torch.mean(torch.max(logits, 1)[0] - logits[range(len(inp)), target.cpu().numpy()]).item()
-        writer_tr.add_scalar('decomp_loss_2', decomp_loss_2, global_step)
+        writer_tr.add_scalar('decomp_loss_max', decomp_loss_2, global_step)
 
         if (step + 1) % args.report_freq == 0:
             logging.info('Train Step: %03d Objs: %e Acc: %.2f', step + 1, objs.avg, top1.avg)
