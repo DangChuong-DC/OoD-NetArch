@@ -197,7 +197,7 @@ def ood_eval(valid_queue, ood_queues, net, criterion):
     return np.mean(lg_aucs), np.mean(sm_aucs), np.mean(ent_aucs)
 
 
-def train(train_queue, model, criterion, optimizer, writer):
+def train(train_queue, model, criterion, optimizer):
     objs = utils.AverageMeter()
     top1 = utils.AverageMeter()
     model.train()
