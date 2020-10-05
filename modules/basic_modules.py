@@ -56,7 +56,7 @@ class Edge(nn.Module):
         return output
 
 
-class Cell(nn.ModuleList):
+class Cell(nn.Module):
 
     def __init__(self, steps, multiplier, C_prev_prev, C_prev, C, reduction, reduction_prev, combine_method):
         super(Cell, self).__init__()
