@@ -1,3 +1,5 @@
 # Attempt to analyzing relationship between Network architecture and Out-of-Distribution (OoD) performance
 
-*this repository exists for legacy & prospective reason 
+#### This repository exists for legacy & prospective reason
+
+*if you make use of this code, give me some stars 
